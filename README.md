@@ -1,4 +1,4 @@
-## POSシステムのAPI
+## CodeCrushのAPI
 
 ## セットアップ
 ```bash
