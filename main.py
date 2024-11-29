@@ -2,11 +2,15 @@ from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.WsManager import WsManager
 import json
 
-manager = WsManager()
+from src.WsManager import WsManager
+from src.models import Datas
+
+
+
 app = FastAPI()
+manager = WsManager()
 
 #dictでroomIdとidを保存する
 roomId_store = {}
@@ -32,6 +36,23 @@ app.add_middleware(
 @app.get("/")
 async def get():
     return HTMLResponse("code-read Create By Ayuayuyu")
+
+@app.post("/codeCrush/{roomId}")
+async def codeCrushEndpoint(code: str):
+    """
+    破壊したコードを送るエンドポイント
+    """
+    print(f"codeCrush: {code}")
+    return {"status": "crush"}
+
+@app.post("/codefix")
+async def codeFixEndpoint(code: str):
+    """
+    修正したコードを送るエンドポイント
+    """
+    print(f"codeFix: {code}")
+    return {"status": "fix"}
+    
 
 @app.websocket("/ws/{roomId}")
 async def websocket_endpoint(websocket: WebSocket,roomId:str):
