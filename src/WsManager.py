@@ -1,21 +1,33 @@
-from typing import Dict
-
+from typing import List, Dict
 from fastapi import WebSocket
+from collections import defaultdict
 
 class WsManager:
     def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
-        
-    async def connect(self, websocket: WebSocket, key: str):
+        # 複数の部屋を管理するために辞書を使用する
+        self.active_connections: Dict[str, List[WebSocket]] = defaultdict(list)
+
+    async def connect(self, websocket: WebSocket, room_id: str):
         await websocket.accept()
-        self.active_connections[key] = websocket
+        self.active_connections[room_id].append(websocket)
 
-    async def disconnect(self,key:str):
-        print(f"WebSocket close")
-        if self.active_connections[key]:
-            await self.active_connections[key].close()
-            print(f"remove : {key}")
-            del self.active_connections[key]
+    async def disconnect(self, websocket: WebSocket, room_id: str):
+        try:
+            self.active_connections[room_id].remove(websocket)
+            if not self.active_connections[room_id]:  # リストが空なら部屋を削除
+                del self.active_connections[room_id]
+        except ValueError:
+            print(f"Error: {ValueError}")
 
-    async def send_text(self, message: str,key:str):
-        await self.active_connections[key].send_text(message)
+    async def broadcast(self, message: str, room_id: str):
+        to_remove = []
+        for connection in self.active_connections.get(room_id, []):
+            try:
+                await connection.send_text(message)
+            except:
+                to_remove.append(connection)
+
+        for connection in to_remove:
+            self.active_connections[room_id].remove(connection)
+        if not self.active_connections[room_id]:
+            del self.active_connections[room_id]

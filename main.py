@@ -1,30 +1,19 @@
-from typing import List
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from typing import Dict
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import json
 
 from src.WsManager import WsManager
-from src.models import Datas
-
-
+from src.models import Crush,Player
 
 app = FastAPI()
 manager = WsManager()
 
-#dictでroomIdとidを保存する
-roomId_store = {}
+# 部屋ごとのコード管理
+roomId_code: Dict[str, Dict[str, str]] = {}
 
-class Counter():
-    counter =  0
-    
-    def getCount(self):
-        self.counter+=1
-        return self.counter
-    
-counter = Counter()
-
-# CORSの設定を追加
+# CORS設定
 app.add_middleware(
     CORSMiddleware,
     allow_origins="*",
@@ -38,41 +27,63 @@ async def get():
     return HTMLResponse("code-read Create By Ayuayuyu")
 
 @app.post("/codeCrush/{roomId}")
-async def codeCrushEndpoint(code: str):
+async def codeCrushEndpoint(data: Crush, roomId: str):
     """
     破壊したコードを送るエンドポイント
+    プレイヤー1とプレイヤー2でコードを交換する
     """
-    print(f"codeCrush: {code}")
-    return {"status": "crush"}
+    if data.player not in ["player1", "player2"]:
+        raise HTTPException(status_code=400, detail="Invalid player. Use 'player1' or 'player2'.")
 
-@app.post("/codefix")
-async def codeFixEndpoint(code: str):
+    if roomId not in roomId_code:
+        roomId_code[roomId] = {"player1": None, "player2": None}
+
+    # コードを保存
+    roomId_code[roomId][data.player ] = data.code
+    print(f"roomId: {roomId}, {data.player } sent code: {data.code}")
+
+    # もう一方のプレイヤーのコードを確認
+    other_player = "player1" if data.player == "player2" else "player2"
+    if roomId_code[roomId][other_player]:
+        exchanged_code = roomId_code[roomId][other_player]
+        print(f"Exchanging code with {other_player}: {exchanged_code}")
+        return {"status": "exchanged", "code": exchanged_code}
+
+    # もう一方のコードがまだない場合
+    return {"status": "waiting"}
+
+@app.post("/getCode/{roomId}")
+async def getCodeEndpoint(data: Player, roomId: str):
     """
-    修正したコードを送るエンドポイント
+    プレイヤー1とプレイヤー2でコードを交換するエンドポイント
     """
-    print(f"codeFix: {code}")
-    return {"status": "fix"}
-    
+    if data.player not in ["player1", "player2"]:
+        raise HTTPException(status_code=400, detail="Invalid player. Use 'player1' or 'player2'.")
+    # もう一方のプレイヤーのコードを確認
+    other_player = "player1" if data.player == "player2" else "player2"
+    if roomId_code[roomId][other_player]:
+        exchanged_code = roomId_code[roomId][other_player]
+        print(f"Exchanging code with {other_player}: {exchanged_code}")
+        return {"status": "exchanged", "code": exchanged_code}
+
+    # もう一方のコードがまだない場合
+    return {"status": "waiting"}
 
 @app.websocket("/ws/{roomId}")
-async def websocket_endpoint(websocket: WebSocket,roomId:str):
+async def websocket_endpoint(websocket: WebSocket, roomId: str):
     """
-    webSocketのエンドポイント
+    WebSocketのエンドポイント
     """
-    await manager.connect(websocket,roomId)
+    await manager.connect(websocket, roomId)
     try:
         while True:
-            roomId = await websocket.receive_text()
-            #roomIdだけ送られたとき
-            roomId_store[roomId] = None
-            await websocket.send_text(json.dumps({"status": roomId}))
+            code = await websocket.receive_text()
+            await websocket.send_text(json.dumps({"status": "received", "roomId": roomId,"code": code}))
     except WebSocketDisconnect:
-        #接続が切れた場合は削除
-        await manager.disconnect(roomId)
+        await manager.disconnect(websocket, roomId)
         print("WebSocket close")
-        #roomIdの削除
-        print(f"remove roomId: {roomId}")
-        if roomId in roomId_store:
-            del roomId_store[roomId]
-            
-    
+        try:
+            del roomId_code[roomId]
+            print(f"remove roomId: {roomId}")
+        except KeyError:
+            pass
