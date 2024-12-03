@@ -13,3 +13,6 @@ class Fix(BaseModel):
     
 class Player(BaseModel):
     player: str
+    
+# class StatusUpdate(BaseModel):
+#     player: str  # "player1" または "player2"
