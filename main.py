@@ -7,18 +7,24 @@ import asyncio
 import json
 
 from src.WsManager import WsManager
-from src.models import Crush, Player
+from src.models import Crush,Code ,Player,Language
 
 app = FastAPI()
 manager = WsManager()
 
 # グローバル変数
-roomId_code = defaultdict(lambda: {"player1": None, "player2": None})
+# ルームのステータスの管理
 room_status = defaultdict(lambda: {
     "explanation": {"player1": False, "player2": False, "completed": False},
     "crush": {"player1": False, "player2": False, "completed": False},
     "fix": {"player1": False, "player2": False, "completed": False},
     "result": {"player1": False, "player2": False, "completed": False},
+})
+# 部屋ごとのコードを管理
+roomId_code = defaultdict(lambda: {
+    "player1": None,
+    "player2": None,
+    "code": None  # デフォルトのコード
 })
 lock = asyncio.Lock()
 
@@ -40,7 +46,57 @@ async def get():
 def validate_room_and_player(roomId: str, player: str):
     if player not in ["player1", "player2"]:
         raise HTTPException(status_code=400, detail="Invalid player. Use 'player1' or 'player2'.")
+    
+    
+    
+def compare_and_add_comment(old_code: str, new_code: str,language:str) -> str:
+    """
+    2つのコードを比較し、差分がある行に //del コメントを追加する。
+    """
+    # コードを行ごとに分割
+    old_lines = old_code.splitlines()
+    new_lines = new_code.splitlines()
+    
+    # 結果を格納するリスト
+    result = []
+    
+    def comment_select():
+        if language == "c":
+            return "//del"
+        elif language == "python":
+            return "#del"
+    
+    comment = comment_select()
+    
+    
+    # 行ごとに比較
+    for i, new_line in enumerate(new_lines):
+        if i < len(old_lines):
+            old_line = old_lines[i]
+            # 変更されている場合
+            if new_line != old_line:
+                result.append(f"{new_line} {comment}")  # コメント追加
+            else:
+                result.append(new_line)  # 変更なし
+        else:
+            # 新しい行（旧コードに存在しない行）
+            result.append(f"{new_line} {comment}")
+    
+    # 古いコードに存在し、新しいコードにない行は無視（削除された行）
+    # 結果を結合して返す
+    return "\n".join(result)
 
+
+@app.post("/defalutCode/{roomId}")
+async def defaultCode(code: Code,roomId: str):
+    """
+    元となるコードを受け取るエンドポイント
+    """
+    async with lock:
+        roomId_code[roomId]["code"] = code.code
+
+    return roomId_code[roomId]["code"]
+    
 
 @app.post("/status/{status_type}/{roomId}")
 async def update_status(status_type: str, roomId: str, update: Player):
@@ -93,7 +149,7 @@ async def codeCrushEndpoint(data: Crush, roomId: str):
 
 
 @app.post("/getCode/{roomId}")
-async def getCodeEndpoint(data: Player, roomId: str):
+async def getCodeEndpoint(data: Language, roomId: str):
     """
     プレイヤー1とプレイヤー2でコードを交換するエンドポイント
     """
@@ -102,7 +158,8 @@ async def getCodeEndpoint(data: Player, roomId: str):
         other_player = "player1" if data.player == "player2" else "player2"
 
         if roomId_code[roomId][other_player]:
-            exchanged_code = roomId_code[roomId][other_player]
+            #比較してコメントの追加
+            exchanged_code = compare_and_add_comment(roomId_code[roomId]["code"], roomId_code[roomId][other_player],data.language)
             print(f"Exchanging code with {other_player}: {exchanged_code}")
             return {"status": "exchanged", "code": exchanged_code}
 
