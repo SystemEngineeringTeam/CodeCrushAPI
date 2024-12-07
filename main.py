@@ -18,7 +18,7 @@ room_status = defaultdict(lambda: {
     "read": {"player1": False, "player2": False, "completed": False},
     "delete": {"player1": False, "player2": False, "completed": False},
     "fix": {"player1": False, "player2": False, "completed": False},
-    "result": {"player1": False, "player2": False, "completed": False},
+    "answer": {"player1": False, "player2": False, "completed": False},
 })
 room_getStatus = defaultdict(lambda: {
     "status": None
