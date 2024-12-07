@@ -96,7 +96,7 @@ def compare_and_add_comment(old_code: str, new_code: str,language:str) -> str:
 @app.post("/player/{roomId}")
 async def playerendpoint(data: Player,roomId: str):
     if data.player == "player1":
-        print(f"player1: {player[roomId]["player1"]},player2: {player[roomId]["player2"]}")
+        print(f"player1: {player[roomId]['player1']},player2: {player[roomId]['player2']}")
         if player[roomId]["player1"] == False:
             player[roomId]["player1"] = True
             print("player1: false")
