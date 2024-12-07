@@ -159,7 +159,7 @@ async def get_status(roomId: str):
     if roomId in room_getStatus[roomId]:
         return {"error": "Room or status type not found"}
 
-    if room_getStatus[roomId]:
+    if (room_getStatus[roomId]!= None):
         print(f"status: {room_getStatus[roomId]}")
         return {"status": room_getStatus[roomId]}
     else :
