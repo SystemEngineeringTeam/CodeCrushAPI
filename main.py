@@ -20,6 +20,9 @@ room_status = defaultdict(lambda: {
     "fix": {"player1": False, "player2": False, "completed": False},
     "result": {"player1": False, "player2": False, "completed": False},
 })
+room_getStatus = defaultdict(lambda: {
+    "status": "read"
+})
 # 部屋ごとのコードを管理
 roomId_code = defaultdict(lambda: {
     "player1": None,
@@ -143,21 +146,22 @@ async def update_status(status_type: str, roomId: str, update: Player):
             and room_status[roomId][status_type]["player2"]
         ):
             room_status[roomId][status_type]["completed"] = True
+            room_getStatus[roomId] = status_type
 
     return room_status[roomId][status_type]
 
 
-@app.get("/status/{status_type}/{roomId}")
-async def get_status(status_type: str, roomId: str):
+@app.get("/status/{roomId}")
+async def get_status(roomId: str):
     """
     任意のステータスを取得するエンドポイント
     """
-    if roomId not in room_status or status_type not in room_status[roomId]:
+    if roomId in room_getStatus[roomId]:
         return {"error": "Room or status type not found"}
 
-    if room_status[roomId][status_type]["completed"]:
-        print(f"status: {status_type}")
-        return {"status": status_type}
+    if room_getStatus[roomId]:
+        print(f"status: {room_getStatus[roomId]}")
+        return {"status": room_getStatus[roomId]}
     else :
         print("status : waiting")
         return {"status": "waiting"}
