@@ -15,8 +15,8 @@ manager = WsManager()
 # グローバル変数
 # ルームのステータスの管理
 room_status = defaultdict(lambda: {
-    "explanation": {"player1": False, "player2": False, "completed": False},
-    "crush": {"player1": False, "player2": False, "completed": False},
+    "read": {"player1": False, "player2": False, "completed": False},
+    "delete": {"player1": False, "player2": False, "completed": False},
     "fix": {"player1": False, "player2": False, "completed": False},
     "result": {"player1": False, "player2": False, "completed": False},
 })
@@ -163,7 +163,7 @@ async def get_status(status_type: str, roomId: str):
         return {"status": "waiting"}
 
 
-@app.post("/codeCrush/{roomId}")
+@app.post("/deleteCode/{roomId}")
 async def codeCrushEndpoint(data: Crush, roomId: str):
     """
     破壊したコードを送るエンドポイント
@@ -176,7 +176,7 @@ async def codeCrushEndpoint(data: Crush, roomId: str):
     return {"status": "sendCode"}
 
 
-@app.post("/getCode/{roomId}")
+@app.post("/fixCode/{roomId}")
 async def getCodeEndpoint(data: Language, roomId: str):
     """
     プレイヤー1とプレイヤー2でコードを交換するエンドポイント
