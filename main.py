@@ -62,9 +62,9 @@ def compare_and_add_comment(old_code: str, new_code: str,language:str) -> str:
     
     def comment_select():
         if language == "c":
-            return "//del"
+            return "//delete"
         elif language == "python":
-            return "#del"
+            return "#delete"
     
     comment = comment_select()
     
