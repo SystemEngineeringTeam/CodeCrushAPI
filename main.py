@@ -26,6 +26,12 @@ roomId_code = defaultdict(lambda: {
     "player2": None,
     "code": None  # デフォルトのコード
 })
+
+player = defaultdict(lambda: {
+    "player1": False,
+    "player2": False,
+})
+
 lock = asyncio.Lock()
 
 # CORS設定
@@ -85,6 +91,28 @@ def compare_and_add_comment(old_code: str, new_code: str,language:str) -> str:
     # 古いコードに存在し、新しいコードにない行は無視（削除された行）
     # 結果を結合して返す
     return "\n".join(result)
+
+
+@app.post("/player/{roomId}")
+async def playerendpoint(data: Player,roomId: str):
+    if data.player == "player1":
+        print(f"player1: {player[roomId]["player1"]},player2: {player[roomId]["player2"]}")
+        if player[roomId]["player1"] == False:
+            player[roomId]["player1"] = True
+            print("player1: false")
+            return {"player": "false"}
+        elif player[roomId]["player1"] == True:
+            print("player1: true")
+            return {"player": "true"}
+    elif data.player == "player2":
+        if player[roomId]["player2"] == False:
+            player[roomId]["player2"] = True
+            print("player2: false")
+            return {"player": "false"}
+        elif player[roomId]["player2"] == True:
+            print("player2: true")
+            return {"player": "true"}
+
 
 
 @app.post("/defalutCode/{roomId}")
