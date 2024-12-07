@@ -21,7 +21,7 @@ room_status = defaultdict(lambda: {
     "result": {"player1": False, "player2": False, "completed": False},
 })
 room_getStatus = defaultdict(lambda: {
-    "status": "read"
+    "status": None
 })
 # 部屋ごとのコードを管理
 roomId_code = defaultdict(lambda: {
