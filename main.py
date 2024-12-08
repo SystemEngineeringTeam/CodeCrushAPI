@@ -58,9 +58,9 @@ def validate_room_and_player(roomId: str, player: str):
     
     
     
-def compare_and_add_comment(old_code: str, new_code: str,language:str) -> str:
+def compare_and_add_comment(old_code: str, new_code: str, language: str) -> str:
     """
-    2つのコードを比較し、差分がある行に //del コメントを追加する。
+    2つのコードを比較し、内容が変更された行に //delete または #delete コメントを追加する。
     """
     # コードを行ごとに分割
     old_lines = old_code.splitlines()
@@ -77,14 +77,17 @@ def compare_and_add_comment(old_code: str, new_code: str,language:str) -> str:
     
     comment = comment_select()
     
-    
     # 行ごとに比較
     for i, new_line in enumerate(new_lines):
         if i < len(old_lines):
             old_line = old_lines[i]
-            # 変更されている場合
+            # 変更がある場合
             if new_line != old_line:
-                result.append(f"{new_line} {comment}")  # コメント追加
+                # 内容が同じかどうかを確認（余分な空白や改行を無視）
+                if new_line.strip() == old_line.strip():
+                    result.append(new_line)  # 変更なしとして扱う
+                else:
+                    result.append(f"{new_line} {comment}")  # コメント追加
             else:
                 result.append(new_line)  # 変更なし
         else:
@@ -94,6 +97,7 @@ def compare_and_add_comment(old_code: str, new_code: str,language:str) -> str:
     # 古いコードに存在し、新しいコードにない行は無視（削除された行）
     # 結果を結合して返す
     return "\n".join(result)
+
 
 
 @app.post("/player/{roomId}")
