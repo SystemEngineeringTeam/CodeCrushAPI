@@ -61,42 +61,54 @@ def validate_room_and_player(roomId: str, player: str):
 def compare_and_add_comment(old_code: str, new_code: str, language: str) -> str:
     """
     2つのコードを比較し、内容が変更された行に //delete または #delete コメントを追加する。
+    また、旧コードに存在し新コードにない行を出力する。
     """
     # コードを行ごとに分割
     old_lines = old_code.splitlines()
     new_lines = new_code.splitlines()
-    
+
     # 結果を格納するリスト
     result = []
-    
+
+    # 削除された行を格納するリスト
+    deleted_lines = []
+
     def comment_select():
         if language == "c":
             return "//delete"
         elif language == "python":
             return "#delete"
-    
+
     comment = comment_select()
-    
-    # 行ごとに比較
-    for i, new_line in enumerate(new_lines):
-        if i < len(old_lines):
-            old_line = old_lines[i]
-            # 変更がある場合
-            if new_line != old_line:
-                # 内容が同じかどうかを確認（余分な空白や改行を無視）
-                if new_line.strip() == old_line.strip():
-                    result.append(new_line)  # 変更なしとして扱う
+
+    max_lines = max(len(old_lines), len(new_lines))
+
+    for i in range(max_lines):
+        old_line = old_lines[i] if i < len(old_lines) else None
+        new_line = new_lines[i] if i < len(new_lines) else None
+
+        # 両方の行が存在する場合
+        if old_line is not None and new_line is not None:
+            # 内容が変更されている場合
+            if old_line.strip() != new_line.strip():
+                # ただし、空白やインデントの変更だけの場合は変更なしとして扱う
+                if old_line.strip() == new_line.strip():
+                    result.append(new_line)  # そのまま追加
                 else:
                     result.append(f"{new_line} {comment}")  # コメント追加
             else:
-                result.append(new_line)  # 変更なし
-        else:
-            # 新しい行（旧コードに存在しない行）
+                result.append(new_line)  # そのまま追加
+        # 新しいコードに存在しない場合（削除された行）
+        elif old_line is not None:
+            deleted_lines.append(old_line)  # 削除された行として記録
+        # 新しいコードにのみ存在する場合
+        elif new_line is not None:
             result.append(f"{new_line} {comment}")
-    
-    # 古いコードに存在し、新しいコードにない行は無視（削除された行）
+
+
     # 結果を結合して返す
     return "\n".join(result)
+
 
 
 
